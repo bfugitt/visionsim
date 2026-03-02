@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animal Vision Explorer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom styles for sliders to make them kid-friendly */
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 24px;
+      width: 24px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      margin-top: -8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 8px;
+      cursor: pointer;
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    input[type=range]:focus {
+      outline: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans selection:bg-blue-200 min-h-screen pb-12">
+
+  <!-- Hidden Video Element used as the source -->
+  <video id="webcam" playsinline muted class="hidden"></video>
+
+  <header class="bg-white shadow-sm p-4 text-center">
+    <h1 class="text-3xl font-extrabold text-slate-800 flex items-center justify-center gap-3">
+      🐾 Animal Vision Explorer 👁️
+    </h1>
+    <p class="text-slate-500 mt-2 font-medium">Select an animal or build your own vision!</p>
+  </header>
+
+  <main class="max-w-4xl mx-auto p-4 md:p-6 flex flex-col items-center gap-6">
+    
+    <!-- Camera View Area -->
+    <div class="relative w-full max-w-2xl aspect-video bg-black rounded-2xl overflow-hidden shadow-xl border-4 border-white flex items-center justify-center">
+      
+      <div id="loading-state" class="text-white flex flex-col items-center gap-3">
+        <div class="animate-spin text-4xl">⏳</div>
+        <p>Starting Camera...</p>
+      </div>
+
+      <div id="error-state" class="hidden text-red-400 p-6 text-center font-bold">
+        Oops! We couldn't find a camera. Please make sure your Chromebook camera is allowed.
+      </div>
+      
+      <canvas id="output-canvas" class="w-full h-full object-cover hidden"></canvas>
+      
+      <!-- Overlays -->
+      <div id="vision-badge" class="hidden absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-4 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 border border-white/20">
+        <span id="badge-emoji" class="text-2xl">🧑</span>
+        <span id="badge-name">Human Vision</span>
+      </div>
+    </div>
+
+    <!-- Animal Selection Buttons Container -->
+    <div id="button-container" class="flex flex-wrap justify-center gap-2 md:gap-3 w-full">
+      <!-- Buttons will be injected here by JS -->
+    </div>
+
+    <!-- Educational Fact Box (For Animals) -->
+    <div id="fact-box" class="w-full max-w-2xl mt-2 p-6 rounded-2xl border-2 transition-colors duration-300 bg-blue-50 border-blue-200">
+      <div class="flex items-start gap-4">
+        <div id="fact-emoji" class="text-4xl mt-1">🧑</div>
+        <div>
+          <h3 class="font-bold text-xl mb-2 text-slate-800">
+            How do <span id="fact-animal-name">human</span>s see?
+          </h3>
+          <p id="fact-text" class="text-slate-700 text-lg leading-relaxed">
+            Humans have three types of color receptors in our eyes...
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Experiment Control Panel (Hidden by default) -->
+    <div id="experiment-panel" class="hidden w-full max-w-2xl mt-2 p-6 rounded-2xl border-2 bg-indigo-50 border-indigo-200 shadow-inner">
+      <div class="flex items-center gap-3 mb-4 border-b border-indigo-200 pb-3">
+        <span class="text-3xl">🧪</span>
+        <h3 class="font-bold text-2xl text-slate-800">Vision Laboratory</h3>
+      </div>
+      
+      <div class="space-y-6">
+        <!-- Light Sensitivity Slider -->
+        <div>
+          <div class="flex justify-between font-bold text-slate-700 mb-1">
+            <label for="slide-brightness">Light Sensitivity</label>
+            <span class="text-sm text-slate-500">Dark ⬅️ ➡️ Bright</span>
+          </div>
+          <input type="range" id="slide-brightness" min="0.1" max="3.0" step="0.1" value="1.0">
+        </div>
+
+        <!-- Color Vision Slider -->
+        <div>
+          <div class="flex justify-between font-bold text-slate-700 mb-1">
+            <label for="slide-color">Color Receptors</label>
+            <span class="text-sm text-slate-500">Black & White ⬅️ ➡️ Full Color</span>
+          </div>
+          <input type="range" id="slide-color" min="0" max="1" step="0.05" value="1.0">
+        </div>
+
+        <!-- Eye Type (Compound) Slider -->
+        <div>
+          <div class="flex justify-between font-bold text-slate-700 mb-1">
+            <label for="slide-compound">Eye Lenses (Compound Eye)</label>
+            <span class="text-sm text-slate-500">1 Lens ⬅️ ➡️ Many Lenses</span>
+          </div>
+          <input type="range" id="slide-compound" min="1" max="12" step="1" value="1">
+        </div>
+
+        <!-- Sharpness Slider -->
+        <div>
+          <div class="flex justify-between font-bold text-slate-700 mb-1">
+            <label for="slide-blur">Vision Sharpness</label>
+            <span class="text-sm text-slate-500">Blurry / Blocky ⬅️ ➡️ Sharp</span>
+          </div>
+          <input type="range" id="slide-blur" min="1" max="30" step="1" value="30" dir="rtl">
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // --- Pre-calculated Color Maps for Performance ---
+    const generateHeatMap = () => {
+      const map = new Uint8Array(256 * 3);
+      for (let i = 0; i < 256; i++) {
+        let r = 0, g = 0, b = 0;
+        if (i < 64) { b = i * 4; } 
+        else if (i < 128) { g = (i - 64) * 4; b = 255 - (i - 64) * 4; } 
+        else if (i < 192) { r = (i - 128) * 4; g = 255; } 
+        else { r = 255; g = 255 - (i - 192) * 4; b = (i - 192) * 4; }
+        map[i * 3] = r; map[i * 3 + 1] = g; map[i * 3 + 2] = b;
+      }
+      return map;
+    };
+    const HEATMAP = generateHeatMap();
+
+    // --- Animal Data Definitions ---
+    const ANIMAL_DATA = {
+      human: { id: 'human', name: 'Human', emoji: '🧑', color: 'bg-blue-500', theme: 'bg-blue-50 border-blue-200', fact: 'Humans have three types of color receptors in our eyes, allowing us to see millions of colors including reds, greens, and blues!' },
+      cat: { id: 'cat', name: 'Cat', emoji: '🐈', color: 'bg-orange-400', theme: 'bg-orange-50 border-orange-200', fact: 'Cats have a special reflective layer in their eyes that acts like a mirror to bounce light around. This gives them amazing night vision, making the world look brighter, but less colorful!' },
+      owl: { id: 'owl', name: 'Owl', emoji: '🦉', color: 'bg-slate-600', theme: 'bg-slate-100 border-slate-300', fact: 'Owls are nocturnal! Their eyes are packed with light-sensitive cells to see in the dark. If they look around in the daytime, everything looks extremely bright, washed out, and mostly in black-and-white.' },
+      shark: { id: 'shark', name: 'Shark', emoji: '🦈', color: 'bg-cyan-700', theme: 'bg-cyan-50 border-cyan-200', fact: 'Deep underwater, there is very little light and almost no red light. Sharks see a dark, shadowy world mostly in shades of blue and green to spot the shapes of swimming fish.' },
+      dog: { id: 'dog', name: 'Dog', emoji: '🐶', color: 'bg-yellow-500', theme: 'bg-yellow-50 border-yellow-200', fact: 'Dogs only have two types of color receptors. They are red-green colorblind, meaning they see the world mostly in shades of blue and yellow.' },
+      snake: { id: 'snake', name: 'Snake', emoji: '🐍', color: 'bg-green-600', theme: 'bg-green-50 border-green-200', fact: 'Many snakes (like pit vipers) have special heat-sensing pits on their faces. They can "see" infrared heat to hunt warm-blooded prey in the dark!' },
+      bee: { id: 'bee', name: 'Bee', emoji: '🐝', color: 'bg-amber-400', theme: 'bg-amber-50 border-amber-200', fact: 'Bees can see ultraviolet (UV) light! Flowers often have hidden UV patterns that act like landing pads to guide bees to the nectar.' },
+      fly: { id: 'fly', name: 'Fly', emoji: '🪰', color: 'bg-purple-500', theme: 'bg-purple-50 border-purple-200', fact: 'Flies have "compound eyes" made up of thousands of tiny lenses. This helps them see in almost all directions at once and spot fast movements.' },
+      snail: { id: 'snail', name: 'Snail', emoji: '🐌', color: 'bg-stone-500', theme: 'bg-stone-100 border-stone-300', fact: 'Snails don\'t have complex eyes like ours. They have simple "eyespots" on their tentacles that can only sense light and dark. Their vision is very blurry and they use it to find shady spots to stay cool!' },
+      experiment: { id: 'experiment', name: 'Experiment', emoji: '🧪', color: 'bg-indigo-600', theme: 'bg-indigo-50 border-indigo-200', fact: '' }
+    };
+
+    // --- Global State ---
+    let currentAnimal = 'human';
+    let isPlaying = false;
+    let expParams = { brightness: 1.0, color: 1.0, compound: 1, blur: 1 };
+
+    // --- DOM Elements ---
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('output-canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    
+    const loadingState = document.getElementById('loading-state');
+    const errorState = document.getElementById('error-state');
+    const visionBadge = document.getElementById('vision-badge');
+    const badgeEmoji = document.getElementById('badge-emoji');
+    const badgeName = document.getElementById('badge-name');
+    
+    const factBox = document.getElementById('fact-box');
+    const expPanel = document.getElementById('experiment-panel');
+    const buttonContainer = document.getElementById('button-container');
+
+    // --- Initialize Application ---
+    function init() {
+      createButtons();
+      setupSliders();
+      startCamera();
+    }
+
+    // --- Setup UI ---
+    function createButtons() {
+      buttonContainer.innerHTML = '';
+      Object.values(ANIMAL_DATA).forEach(animal => {
+        const btn = document.createElement('button');
+        const isSelected = currentAnimal === animal.id;
+        
+        btn.className = `flex items-center gap-2 px-4 py-3 md:px-5 md:py-3 rounded-2xl font-bold text-base md:text-lg transition-all duration-200 shadow-sm border-2 ${
+          isSelected 
+            ? `${animal.color} text-white scale-105 shadow-md ring-4 ring-offset-2 ring-${animal.color}/50 border-transparent` 
+            : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200 hover:scale-105'
+        }`;
+        
+        btn.innerHTML = `<span class="text-xl md:text-2xl">${animal.emoji}</span> ${animal.name}`;
+        btn.onclick = () => selectAnimal(animal.id);
+        buttonContainer.appendChild(btn);
+      });
+    }
+
+    function selectAnimal(id) {
+      currentAnimal = id;
+      createButtons(); // Re-render buttons for selected state
+      
+      const data = ANIMAL_DATA[id];
+      badgeEmoji.innerText = data.emoji;
+      badgeName.innerText = data.name + (id === 'experiment' ? ' Mode' : ' Vision');
+
+      if (id === 'experiment') {
+        factBox.classList.add('hidden');
+        expPanel.classList.remove('hidden');
+      } else {
+        expPanel.classList.add('hidden');
+        factBox.classList.remove('hidden');
+        
+        // Update fact box content
+        factBox.className = `w-full max-w-2xl mt-2 p-6 rounded-2xl border-2 transition-colors duration-300 ${data.theme}`;
+        document.getElementById('fact-emoji').innerText = data.emoji;
+        document.getElementById('fact-animal-name').innerText = data.name.toLowerCase();
+        document.getElementById('fact-text').innerText = data.fact;
+      }
+    }
+
+    function setupSliders() {
+      document.getElementById('slide-brightness').addEventListener('input', (e) => expParams.brightness = parseFloat(e.target.value));
+      document.getElementById('slide-color').addEventListener('input', (e) => expParams.color = parseFloat(e.target.value));
+      document.getElementById('slide-compound').addEventListener('input', (e) => expParams.compound = parseInt(e.target.value));
+      
+      // We invert the blur slider visually (Sharp is 30, Blurry is 1), so calculate scale factor:
+      document.getElementById('slide-blur').addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        expParams.blur = 31 - val; // If slider is 30 (Sharp), blur is 1. If slider is 1 (Blurry), blur is 30.
+      });
+    }
+
+    // --- Camera Setup ---
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false,
+        });
+        video.srcObject = stream;
+        video.play();
+      } catch (err) {
+        console.error("Error accessing camera:", err);
+        loadingState.classList.add('hidden');
+        errorState.classList.remove('hidden');
+      }
+    }
+
+    video.addEventListener('play', () => {
+      isPlaying = true;
+      loadingState.classList.add('hidden');
+      canvas.classList.remove('hidden');
+      visionBadge.classList.remove('hidden');
+      visionBadge.classList.add('flex');
+      
+      // Match canvas size to video size
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      
+      requestAnimationFrame(processVideo);
+    });
+
+    // --- Main Processing Loop ---
+    function processVideo() {
+      if (!isPlaying) return;
+      
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // Handle structural differences (Compound Grid and Pixelation Blur)
+      let currentCompound = 1;
+      let currentBlur = 1;
+
+      if (currentAnimal === 'fly') currentCompound = 4;
+      if (currentAnimal === 'snail') currentBlur = 30;
+      if (currentAnimal === 'experiment') {
+        currentCompound = expParams.compound;
+        currentBlur = expParams.blur;
+      }
+
+      // Step 1: Draw base image (handling Blur/Pixelation)
+      if (currentBlur > 1) {
+        ctx.imageSmoothingEnabled = false;
+        const smallW = Math.max(1, Math.floor(width / currentBlur));
+        const smallH = Math.max(1, Math.floor(height / currentBlur));
+        ctx.drawImage(video, 0, 0, smallW, smallH);
+        ctx.drawImage(canvas, 0, 0, smallW, smallH, 0, 0, width, height);
+        ctx.imageSmoothingEnabled = true;
+      } else {
+        ctx.drawImage(video, 0, 0, width, height);
+      }
+
+      // Step 2: Handle Compound Grid
+      if (currentCompound > 1) {
+        // Grab the drawn frame (which might already be blurred)
+        const frameData = ctx.getImageData(0, 0, width, height);
+        
+        // We will redraw this frame multiple times in a grid
+        const cellW = width / currentCompound;
+        const cellH = height / currentCompound;
+        
+        // Temporarily put the data back to an offscreen canvas to copy from
+        const offscreen = document.createElement('canvas');
+        offscreen.width = width; offscreen.height = height;
+        offscreen.getContext('2d').putImageData(frameData, 0, 0);
+
+        // Draw the grid
+        for (let row = 0; row < currentCompound; row++) {
+          for (let col = 0; col < currentCompound; col++) {
+            ctx.drawImage(offscreen, col * cellW, row * cellH, cellW, cellH);
+          }
+        }
+      }
+
+      // Step 3: Apply Pixel/Color Filters
+      if (currentAnimal !== 'human' && currentAnimal !== 'fly') {
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+          let r = data[i];
+          let g = data[i + 1];
+          let b = data[i + 2];
+          let lum = r * 0.299 + g * 0.587 + b * 0.114;
+
+          if (currentAnimal === 'owl') {
+            let wash = lum * 2.5; 
+            data[i] = data[i + 1] = data[i + 2] = wash;
+          }
+          else if (currentAnimal === 'cat') {
+            data[i] = (r * 0.4 + lum * 0.6) * 1.5;
+            data[i + 1] = (g * 0.4 + lum * 0.6) * 1.5;
+            data[i + 2] = (b * 0.4 + lum * 0.6) * 1.5;
+          }
+          else if (currentAnimal === 'shark') {
+            data[i] = r * 0.1; data[i + 1] = g * 0.5; data[i + 2] = b * 0.8;
+          }
+          else if (currentAnimal === 'dog') {
+            data[i] = r * 0.56667 + g * 0.43333;
+            data[i + 1] = r * 0.55833 + g * 0.44167;
+            data[i + 2] = r * 0 + g * 0.24167 + b * 0.75833;
+          } 
+          else if (currentAnimal === 'snake') {
+            let heatLum = Math.floor(lum);
+            data[i] = HEATMAP[heatLum * 3];
+            data[i + 1] = HEATMAP[heatLum * 3 + 1];
+            data[i + 2] = HEATMAP[heatLum * 3 + 2];
+          }
+          else if (currentAnimal === 'bee') {
+            data[i] = b * 0.9;
+            data[i + 1] = g * 0.8 + 20;
+            data[i + 2] = r * 0.9 + b * 0.5;
+          }
+          else if (currentAnimal === 'snail') {
+             // Dark greyscale on top of the blur
+             data[i] = data[i+1] = data[i+2] = lum * 0.4;
+          }
+          else if (currentAnimal === 'experiment') {
+            // Apply Sliders
+            // 1. Color vs B&W
+            r = r * expParams.color + lum * (1 - expParams.color);
+            g = g * expParams.color + lum * (1 - expParams.color);
+            b = b * expParams.color + lum * (1 - expParams.color);
+            
+            // 2. Brightness multiplier
+            data[i] = r * expParams.brightness;
+            data[i + 1] = g * expParams.brightness;
+            data[i + 2] = b * expParams.brightness;
+          }
+        }
+        ctx.putImageData(imageData, 0, 0);
+      }
+
+      requestAnimationFrame(processVideo);
+    }
+
+    // Start everything when the page loads
+    window.onload = init;
+  </script>
+</body>
+</html>
