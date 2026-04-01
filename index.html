@@ -89,7 +89,7 @@
           <span id="badge-emoji" class="text-xl md:text-2xl">🧑</span>
           <span id="badge-name" class="text-sm md:text-base">Human Vision</span>
         </div>
-        
+
         <!-- Camera Flip Button -->
         <button id="flip-camera-btn" onclick="flipCamera()" class="hidden absolute top-4 right-4 bg-black/60 backdrop-blur-sm text-white p-2 md:p-2.5 rounded-full font-bold shadow-lg flex items-center justify-center border border-white/20 hover:bg-black/80 transition-colors z-20" title="Flip Camera">
           <span class="text-xl md:text-2xl">🔄</span>
@@ -253,6 +253,7 @@
       bee: { id: 'bee', name: 'Bee', emoji: '🐝', color: 'bg-amber-400', theme: 'bg-amber-50 border-amber-200', fact: 'Bees can see ultraviolet (UV) light! Flowers often have hidden UV patterns that act like landing pads to guide bees to the nectar.' },
       fly: { id: 'fly', name: 'Fly', emoji: '🪰', color: 'bg-purple-500', theme: 'bg-purple-50 border-purple-200', fact: 'Flies have "compound eyes" made up of thousands of tiny lenses. This helps them see in almost all directions at once and spot fast movements.' },
       snail: { id: 'snail', name: 'Snail', emoji: '🐌', color: 'bg-stone-500', theme: 'bg-stone-100 border-stone-300', fact: 'Snails don\'t have complex eyes like ours. They have simple "eyespots" on their tentacles that can only sense light and dark. Their vision is very blurry!' },
+      horse: { id: 'horse', name: 'Horse', emoji: '🐴', color: 'bg-amber-700', theme: 'bg-amber-50 border-amber-200', fact: 'Horses have horizontal pupils for a wide panoramic view and eyes on the sides of their heads, giving them a big blind spot right in front of their noses! They are also red-green colorblind.' },
       experiment: { id: 'experiment', name: 'Experiment Lab', emoji: '🧪', color: 'bg-indigo-600', theme: 'bg-indigo-50 border-indigo-200', fact: '' }
     };
 
@@ -261,7 +262,7 @@
     let isPlaying = false;
     let expParams = { brightness: 1.0, color: 1.0, compound: 1, blur: 1, zoom: 1.0, blindspot: 0, motionFocus: 0, pupilShape: 0, wobble: 0, eyeShine: 0 };
     let currentFacingMode = 'user'; // Tracks which camera we are using
-    
+
     // Variables for Motion Detection
     let lastFrameData = null;
     let motionMap = null;
@@ -374,8 +375,8 @@
       }
     }
 
+    // Function specifically for the flip camera button
     function flipCamera() {
-      // Toggle between front and back camera
       currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
       loadingState.classList.remove('hidden'); // Show loading spinner while it switches
       startCamera();
@@ -414,6 +415,7 @@
       if (currentAnimal === 'snail') currentBlur = 30;
       if (currentAnimal === 'owl') { currentZoom = 1.5; currentEyeShine = 0.5; }
       if (currentAnimal === 'rabbit') currentBlindspot = 80;
+      if (currentAnimal === 'horse') { currentBlindspot = 80; currentPupilShape = -1; }
       if (currentAnimal === 'goat') currentPupilShape = -1; // Horizontal pupil
       if (currentAnimal === 'cat') { currentPupilShape = 1; currentEyeShine = 0.8; } // Vertical pupil
       if (currentAnimal === 'shark') currentWobble = 0.5;
@@ -515,7 +517,7 @@
           else if (currentAnimal === 'shark') {
             data[i] = r * 0.1; data[i + 1] = g * 0.5; data[i + 2] = b * 0.8;
           }
-          else if (currentAnimal === 'dog') {
+          else if (currentAnimal === 'dog' || currentAnimal === 'horse') {
             data[i] = r * 0.56667 + g * 0.43333; data[i + 1] = r * 0.55833 + g * 0.44167; data[i + 2] = r * 0 + g * 0.24167 + b * 0.75833;
           } 
           else if (currentAnimal === 'snake') {
